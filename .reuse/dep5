@@ -1,5 +1,5 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: Catbus Actuator Wake-On-LAN
+Upstream-Name: Catbus Client library for Golang
 Upstream-Contact: Ethel Morgan <eth@ethulhu.co.uk>
 Source: https://ethulhu.co.uk/catbus
 
