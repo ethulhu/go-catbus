@@ -105,7 +105,7 @@ func TestOnConnect(t *testing.T) {
 			payloadByTopic:  map[string]string{},
 		}
 
-		catbus := &Client{
+		catbus := &client{
 			mqtt:                  fakeMQTT,
 			payloadByTopic:        map[string]string{},
 			onconnectTimerByTopic: map[string]*time.Timer{},
@@ -117,7 +117,7 @@ func TestOnConnect(t *testing.T) {
 		}
 
 		for _, topic := range tt.subscribe {
-			catbus.Subscribe(topic, func(_ *Client, _ Message) {})
+			catbus.Subscribe(topic, func(_ Client, _ Message) {})
 		}
 		for topic, message := range tt.receive {
 			fakeMQTT.send(topic, message.retention, message.payload)
