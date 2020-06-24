@@ -17,63 +17,38 @@ import (
 type (
 	message struct {
 		retention Retention
-		payload   []byte
+		payload   string
 	}
 )
 
 func TestOnConnect(t *testing.T) {
 	tests := []struct {
-		payloadByTopic map[string][]byte
+		payloadByTopic map[string]string
 		subscribe      []string
 		receive        map[string]message
 
-		want map[string][]byte
+		want map[string]string
 	}{
 		{
-			payloadByTopic: map[string][]byte{
-				"tv/power": []byte("off"),
+			payloadByTopic: map[string]string{
+				"tv/power": "off",
 			},
-			want: map[string][]byte{
-				"tv/power": []byte("off"),
+			want: map[string]string{
+				"tv/power": "off",
 			},
 		},
 		{
-			payloadByTopic: map[string][]byte{
-				"tv/power": []byte("off"),
+			payloadByTopic: map[string]string{
+				"tv/power": "off",
 			},
 			subscribe: []string{
 				"tv/power",
 			},
 			receive: map[string]message{
-				"tv/power": {Retain, []byte("on")},
+				"tv/power": {Retain, "on"},
 			},
-			want: map[string][]byte{
-				"tv/power": []byte("on"),
-			},
-		},
-		{
-			subscribe: []string{
-				"tv/power",
-			},
-			receive: map[string]message{
-				"tv/power": {Retain, []byte("on")},
-			},
-			want: map[string][]byte{
-				"tv/power": []byte("on"),
-			},
-		},
-		{
-			payloadByTopic: map[string][]byte{
-				"tv/power": []byte("off"),
-			},
-			subscribe: []string{
-				"tv/power",
-			},
-			receive: map[string]message{
-				"tv/power": {DontRetain, []byte("on")},
-			},
-			want: map[string][]byte{
-				"tv/power": []byte("on"),
+			want: map[string]string{
+				"tv/power": "on",
 			},
 		},
 		{
@@ -81,33 +56,58 @@ func TestOnConnect(t *testing.T) {
 				"tv/power",
 			},
 			receive: map[string]message{
-				"tv/power": {DontRetain, []byte("on")},
+				"tv/power": {Retain, "on"},
 			},
-			want: map[string][]byte{},
+			want: map[string]string{
+				"tv/power": "on",
+			},
 		},
 		{
-			payloadByTopic: map[string][]byte{
-				"tv/power": []byte("off"),
+			payloadByTopic: map[string]string{
+				"tv/power": "off",
 			},
 			subscribe: []string{
 				"tv/power",
 			},
 			receive: map[string]message{
-				"tv/power": {DontRetain, []byte{}},
+				"tv/power": {DontRetain, "on"},
 			},
-			want: map[string][]byte{},
+			want: map[string]string{
+				"tv/power": "on",
+			},
+		},
+		{
+			subscribe: []string{
+				"tv/power",
+			},
+			receive: map[string]message{
+				"tv/power": {DontRetain, "on"},
+			},
+			want: map[string]string{},
+		},
+		{
+			payloadByTopic: map[string]string{
+				"tv/power": "off",
+			},
+			subscribe: []string{
+				"tv/power",
+			},
+			receive: map[string]message{
+				"tv/power": {DontRetain, ""},
+			},
+			want: map[string]string{},
 		},
 	}
 
 	for i, tt := range tests {
 		fakeMQTT := &fakeMQTT{
 			callbackByTopic: map[string]mqtt.MessageHandler{},
-			payloadByTopic:  map[string][]byte{},
+			payloadByTopic:  map[string]string{},
 		}
 
 		catbus := &Client{
 			mqtt:                  fakeMQTT,
-			payloadByTopic:        map[string][]byte{},
+			payloadByTopic:        map[string]string{},
 			onconnectTimerByTopic: map[string]*time.Timer{},
 			onconnectDelay:        1 * time.Millisecond,
 			onconnectJitter:       1,
@@ -141,7 +141,7 @@ type (
 		mqtt.Client
 
 		callbackByTopic map[string]mqtt.MessageHandler
-		payloadByTopic  map[string][]byte
+		payloadByTopic  map[string]string
 	}
 
 	fakeMessage struct {
@@ -156,9 +156,9 @@ type (
 )
 
 func (f *fakeMQTT) Publish(topic string, qos byte, retain bool, payload interface{}) mqtt.Token {
-	bytes, ok := payload.([]byte)
+	bytes, ok := payload.(string)
 	if !ok {
-		panic(fmt.Sprintf("expected type []byte, got %v", reflect.TypeOf(payload)))
+		panic(fmt.Sprintf("expected type string, got %v", reflect.TypeOf(payload)))
 	}
 
 	log.Printf("topic %q payload %s", topic, payload)
@@ -170,7 +170,7 @@ func (f *fakeMQTT) Subscribe(topic string, qos byte, callback mqtt.MessageHandle
 
 	return &fakeToken{}
 }
-func (f *fakeMQTT) send(topic string, retention Retention, payload []byte) {
+func (f *fakeMQTT) send(topic string, retention Retention, payload string) {
 	// if retention == Retain {
 	// f.payloadByTopic[topic] = payload
 	// }
@@ -179,7 +179,7 @@ func (f *fakeMQTT) send(topic string, retention Retention, payload []byte) {
 		msg := &fakeMessage{
 			topic:    topic,
 			retained: bool(retention),
-			payload:  payload,
+			payload:  []byte(payload),
 		}
 		callback(f, msg)
 	}
