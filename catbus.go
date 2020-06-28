@@ -106,7 +106,7 @@ func (c *client) Subscribe(topic string, f MessageHandler) error {
 	return c.mqtt.Subscribe(topic, atLeastOnce, func(_ mqtt.Client, msg mqtt.Message) {
 		c.storePayload(msg.Topic(), Retention(msg.Retained()), string(msg.Payload()))
 
-		f(c, messageFromMQTTMessage(msg))
+		go f(c, messageFromMQTTMessage(msg))
 	}).Error()
 }
 
