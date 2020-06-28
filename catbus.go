@@ -5,7 +5,10 @@
 package catbus
 
 import (
+	"fmt"
 	"math/rand"
+	"os"
+	"path"
 	"sync"
 	"time"
 
@@ -73,6 +76,7 @@ func NewClient(brokerURI string, options ClientOptions) Client {
 	mqttOpts := mqtt.NewClientOptions()
 	mqttOpts.AddBroker(brokerURI)
 	mqttOpts.SetAutoReconnect(true)
+	mqttOpts.SetClientID(defaultClientID())
 	mqttOpts.SetOnConnectHandler(func(_ mqtt.Client) {
 		client.stopAllTimers()
 		client.startAllTimers()
@@ -184,4 +188,11 @@ func messageFromMQTTMessage(msg mqtt.Message) Message {
 		Retention: Retention(msg.Retained()),
 		Topic:     msg.Topic(),
 	}
+}
+
+func defaultClientID() string {
+	binary := path.Base(os.Args[0])
+	hostname, _ := os.Hostname()
+	pid := os.Getpid()
+	return fmt.Sprintf("%s_%s_%d", binary, hostname, pid)
 }
