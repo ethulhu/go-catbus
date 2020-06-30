@@ -21,6 +21,117 @@ type (
 	}
 )
 
+func TestSubscribe(t *testing.T) {
+	tests := []struct {
+		messages              []Message
+		subscribeEveryMessage bool
+		want                  []Message
+	}{
+		{
+			messages: []Message{
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "on",
+				},
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "on",
+				},
+			},
+			want: []Message{
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "on",
+				},
+			},
+		},
+		{
+			messages: []Message{
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "on",
+				},
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "off",
+				},
+			},
+			want: []Message{
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "on",
+				},
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "off",
+				},
+			},
+		},
+		{
+			messages: []Message{
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "on",
+				},
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "on",
+				},
+			},
+			subscribeEveryMessage: true,
+			want: []Message{
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "on",
+				},
+				{
+					Topic:     "home/tv/power",
+					Retention: Retain,
+					Payload:   "on",
+				},
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		fakeMQTT := &fakeMQTT{
+			callbackByTopic: map[string]mqtt.MessageHandler{},
+			payloadByTopic:  map[string]string{},
+		}
+
+		catbus := &client{
+			mqtt:                  fakeMQTT,
+			payloadByTopic:        map[string]string{},
+			subscribeEveryMessage: tt.subscribeEveryMessage,
+
+			syncCallbacks: true,
+		}
+
+		var got []Message
+		catbus.Subscribe("home/tv/power", func(_ Client, msg Message) {
+			got = append(got, msg)
+		})
+
+		for _, msg := range tt.messages {
+			fakeMQTT.send(msg.Topic, msg.Retention, msg.Payload)
+		}
+
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("[%d]: got %v, want %v", i, got, tt.want)
+		}
+	}
+}
+
 func TestOnConnect(t *testing.T) {
 	tests := []struct {
 		payloadByTopic map[string]string
