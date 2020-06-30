@@ -82,14 +82,14 @@ func NewClient(brokerURI string, options ClientOptions) Client {
 		client.startAllTimers()
 
 		if options.ConnectHandler != nil {
-			options.ConnectHandler(client)
+			go options.ConnectHandler(client)
 		}
 	})
 	mqttOpts.SetConnectionLostHandler(func(_ mqtt.Client, err error) {
 		client.stopAllTimers()
 
 		if options.DisconnectHandler != nil {
-			options.DisconnectHandler(client, err)
+			go options.DisconnectHandler(client, err)
 		}
 	})
 	client.mqtt = mqtt.NewClient(mqttOpts)
