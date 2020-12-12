@@ -312,6 +312,9 @@ func (_ *fakeToken) Wait() bool {
 func (_ *fakeToken) WaitTimeout(_ time.Duration) bool {
 	return false
 }
+func (_ *fakeToken) Done() <-chan struct{} {
+	return nil
+}
 func (_ *fakeToken) Error() error {
 	return nil
 }
